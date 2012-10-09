@@ -1,0 +1,7 @@
+{
+    "type": "notFoundError",
+    "code": 404,
+    "message": "object does not exist",
+    "details": "Object \"Session\" with key \"seNotFound\" does not exist",
+    "txnId": ".rh-qyek.h-farscape.r-q3i5psGp.c-3.ts-1347320188220.v-0.1"
+}

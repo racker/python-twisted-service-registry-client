@@ -1,0 +1,14 @@
+{
+    "values": [
+        {
+            "id": "configId",
+            "value": "test value 123456"
+        }
+    ],
+    "metadata": {
+        "count": 1,
+        "limit": 100,
+        "marker": null,
+        "next_href": null
+    }
+}

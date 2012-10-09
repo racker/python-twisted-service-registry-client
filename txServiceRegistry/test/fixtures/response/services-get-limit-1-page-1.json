@@ -1,0 +1,17 @@
+{
+    "values": [
+        {
+            "id": "dfw1-api",
+            "session_id": "seOne",
+            "tags": [],
+            "metadata": {}
+        }
+    ],
+    "metadata": {
+        "count": 1,
+        "limit": 1,
+        "marker": null,
+        "next_marker": "dfw1-db1",
+        "next_href": "https://todo.api.rackspacecloud.com/v1.0/7777/services?limit=1&marker=dfw1-db1"
+    }
+}

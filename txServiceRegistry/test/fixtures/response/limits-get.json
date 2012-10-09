@@ -1,0 +1,10 @@
+{
+    "resource": {},
+    "rate": {
+        "/.*": {
+            "limit": 500000,
+            "used": 0,
+            "window": "24.0 hours"
+        }
+    }
+}

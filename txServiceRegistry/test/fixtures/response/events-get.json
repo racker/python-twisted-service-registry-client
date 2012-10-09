@@ -1,0 +1,46 @@
+{
+    "values": [
+        {
+            "id": "6bc8d050-f86a-11e1-a89e-ca2ffe480b20",
+            "timestamp": 1346967146370,
+            "type": "service.join",
+            "payload": {
+                "id": "dfw1-api",
+                "session_id": "sessionId",
+                "tags": [],
+                "metadata": {}
+            }
+        },
+        {
+            "type": "service.join",
+            "payload": {
+                "id": "dfw1-db1",
+                "session_id": "sessionId",
+                "tags": [
+                    "db",
+                    "mysql"
+                ],
+                "metadata": {
+                    "region": "dfw",
+                    "port": "3306",
+                    "ip": "127.0.0.1",
+                    "version": "5.5.24-0ubuntu0.12.04.1 (Ubuntu)"
+                }
+            }
+        },
+        {
+            "type": "configuration_value.update",
+            "payload": {
+                "old_value": null,
+                "new_value": "test value 123456",
+                "configuration_value_id": "configId"
+            }
+        }
+    ],
+    "metadata": {
+        "count": 3,
+        "limit": 100,
+        "marker": null,
+        "next_href": null
+    }
+}

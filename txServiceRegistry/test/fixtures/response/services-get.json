@@ -1,0 +1,30 @@
+{
+    "values": [
+        {
+            "id": "dfw1-api",
+            "session_id": "sessionId",
+            "tags": [],
+            "metadata": {}
+        },
+        {
+            "id": "dfw1-db1",
+            "session_id": "sessionId",
+            "tags": [
+                "db",
+                "mysql"
+            ],
+            "metadata": {
+                "region": "dfw",
+                "port": "3306",
+                "ip": "127.0.0.1",
+                "version": "5.5.24-0ubuntu0.12.04.1 (Ubuntu)"
+            }
+        }
+    ],
+    "metadata": {
+        "count": 2,
+        "limit": 100,
+        "marker": null,
+        "next_href": null
+    }
+}

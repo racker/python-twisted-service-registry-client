@@ -1,0 +1,4 @@
+*.swp
+*.pyc
+_trial_temp
+mock_api_server.log

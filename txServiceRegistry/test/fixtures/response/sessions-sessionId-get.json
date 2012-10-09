@@ -1,0 +1,8 @@
+{
+    "id": "sessionId",
+    "metadata": {
+        "region": "dfw"
+    },
+    "heartbeat_timeout": 30,
+    "last_seen": null
+}
