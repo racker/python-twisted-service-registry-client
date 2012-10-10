@@ -1,2 +1,3 @@
 Twisted==12.1.0
 pep8
+txKeystone
