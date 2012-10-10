@@ -126,6 +126,7 @@ setup(
     url='https://github.com/racker/python-twisted-service-registry-client',
     install_requires=[
         'Twisted >= 9.0.0',
-        'txKeystone >= 0.1.1'
+        'txKeystone >= 0.1.1',
+        'PyOpenSSL >= 0.13.0'
     ]
 )
