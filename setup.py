@@ -100,7 +100,7 @@ class TestCommand(Command):
 
 setup(
     name='txServiceRegistry',
-    version='0.1.1',
+    version='0.1.2',
     description='A Twisted Python client for Rackspace Service Registry.',
     author='Rackspace Hosting, Inc.',
     author_email='sr@rackspace.com',
