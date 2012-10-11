@@ -114,6 +114,17 @@ class BaseClient(object):
         self.agent = agent
         self.baseUrl = baseUrl
 
+    def _get_options_object(self, marker=None, limit=None):
+        options = {}
+
+        if marker:
+            options['marker'] = marker
+
+        if limit:
+            options['limit'] = limit
+
+        return options
+
     def getIdFromUrl(self, url):
         return url.split('/')[-1]
 
@@ -214,10 +225,11 @@ class SessionsClient(BaseClient):
         self.baseUrl = baseUrl
         self.sessionsPath = '/sessions'
 
-    def list(self):
+    def list(self, marker=None, limit=None):
         path = self.sessionsPath
+        options = self._get_options_object(marker, limit)
 
-        return self.request('GET', path)
+        return self.request('GET', path, options=options)
 
     def get(self, sessionId):
         path = '%s/%s' % (self.sessionsPath, sessionId)
@@ -255,10 +267,8 @@ class EventsClient(BaseClient):
         super(EventsClient, self).__init__(agent, baseUrl)
         self.eventsPath = '/events'
 
-    def list(self, marker=None):
-        options = None
-        if marker:
-            options = {'marker': marker}
+    def list(self, marker=None, limit=None):
+        options = self._get_options_object(marker, limit)
 
         return self.request('GET', self.eventsPath, options=options)
 
@@ -268,11 +278,14 @@ class ServicesClient(BaseClient):
         super(ServicesClient, self).__init__(agent, baseUrl)
         self.servicesPath = '/services'
 
-    def list(self):
-        return self.request('GET', self.servicesPath)
+    def list(self, marker=None, limit=None):
+        options = self._get_options_object(marker, limit)
 
-    def listForTag(self, tag):
-        options = {'tag': tag}
+        return self.request('GET', self.servicesPath, options=options)
+
+    def listForTag(self, tag, marker=None, limit=None):
+        options = self._get_options_object(marker, limit)
+        options['tag'] = tag
 
         return self.request('GET', self.servicesPath, options=options)
 
@@ -350,8 +363,10 @@ class ConfigurationClient(BaseClient):
         super(ConfigurationClient, self).__init__(agent, baseUrl)
         self.configurationPath = '/configuration'
 
-    def list(self):
-        return self.request('GET', self.configurationPath)
+    def list(self, marker=None, limit=None):
+        options = self._get_options_object(marker, limit)
+
+        return self.request('GET', self.configurationPath, options=options)
 
     def get(self, configurationId):
         path = '%s/%s' % (self.configurationPath, configurationId)
