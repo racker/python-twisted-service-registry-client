@@ -193,7 +193,8 @@ class ServiceRegistryClientTests(TestCase):
     def _marker_assertion(self, path, request):
         client = getattr(self.client, path.strip('/'))
         client.list(marker='someMarker')
-        request.assert_called_with('GET', path, options={'marker': 'someMarker'})
+        request.assert_called_with('GET', path,
+                                   options={'marker': 'someMarker'})
 
     @mock.patch("txServiceRegistry.client.BaseClient.request")
     def _limit_assertion(self, path, request):
