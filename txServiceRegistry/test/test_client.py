@@ -245,3 +245,26 @@ class ServiceRegistryClientTests(TestCase):
 
     def test_list_configuration_with_marker_and_limit(self):
         return self._marker_and_limit_assertion('/configuration')
+
+    @mock.patch("txServiceRegistry.client.BaseClient.request")
+    def test_listForTag_with_marker(self, request):
+        self.client.services.listForTag('someTag', marker='someMarker')
+        request.assert_called_with('GET', '/services',
+                                   options={'tag': 'someTag',
+                                            'marker': 'someMarker'})
+
+    @mock.patch("txServiceRegistry.client.BaseClient.request")
+    def test_listForTag_with_limit(self, request):
+        self.client.services.listForTag('someTag', limit=3)
+        request.assert_called_with('GET', '/services',
+                                   options={'tag': 'someTag',
+                                            'limit': 3})
+
+    @mock.patch("txServiceRegistry.client.BaseClient.request")
+    def test_listForTag_with_marker_and_limit(self, request):
+        self.client.services.listForTag('someTag', marker='someMarker',
+                                        limit=3)
+        request.assert_called_with('GET', '/services',
+                                   options={'tag': 'someTag',
+                                            'marker': 'someMarker',
+                                            'limit': 3})
