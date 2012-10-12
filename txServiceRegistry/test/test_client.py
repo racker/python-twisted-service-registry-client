@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import mock
+
 from twisted.internet import reactor
 from twisted.internet.defer import succeed
 from twisted.trial.unittest import TestCase
@@ -186,3 +188,59 @@ class ServiceRegistryClientTests(TestCase):
         d.addCallback(configuration_assert)
 
         return d
+
+    @mock.patch("txServiceRegistry.client.BaseClient.request")
+    def _marker_assertion(self, path, request):
+        client = getattr(self.client, path.strip('/'))
+        client.list(marker='someMarker')
+        request.assert_called_with('GET', path, options={'marker': 'someMarker'})
+
+    @mock.patch("txServiceRegistry.client.BaseClient.request")
+    def _limit_assertion(self, path, request):
+        client = getattr(self.client, path.strip('/'))
+        client.list(limit=3)
+        request.assert_called_with('GET', path, options={'limit': 3})
+
+    @mock.patch("txServiceRegistry.client.BaseClient.request")
+    def _marker_and_limit_assertion(self, path, request):
+        client = getattr(self.client, path.strip('/'))
+        client.list(marker='someMarker', limit=3)
+        request.assert_called_with('GET', path,
+                                   options={'marker': 'someMarker',
+                                            'limit': 3})
+
+    def test_list_services_with_marker_calls_request_with_marker(self):
+        return self._marker_assertion('/services')
+
+    def test_list_sessions_with_marker_calls_request_with_marker(self):
+        return self._marker_assertion('/sessions')
+
+    def test_list_events_with_marker_calls_request_with_marker(self):
+        return self._marker_assertion('/events')
+
+    def test_list_configuration_with_marker_calls_request_with_marker(self):
+        return self._marker_assertion('/configuration')
+
+    def test_list_services_with_limit_calls_request_with_limit(self):
+        return self._limit_assertion('/services')
+
+    def test_list_sessions_with_limit_calls_request_with_limit(self):
+        return self._limit_assertion('/sessions')
+
+    def test_list_events_with_limit_calls_request_with_limit(self):
+        return self._limit_assertion('/events')
+
+    def test_list_configuration_with_limit_calls_request_with_limit(self):
+        return self._limit_assertion('/configuration')
+
+    def test_list_services_with_marker_and_limit(self):
+        return self._marker_and_limit_assertion('/services')
+
+    def test_list_sessions_request_with_marker_and_limit(self):
+        return self._marker_and_limit_assertion('/sessions')
+
+    def test_list_events_with_mark_and_limit(self):
+        return self._marker_and_limit_assertion('/events')
+
+    def test_list_configuration_with_marker_and_limit(self):
+        return self._marker_and_limit_assertion('/configuration')
