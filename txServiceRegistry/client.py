@@ -218,50 +218,6 @@ class BaseClient(object):
         return d
 
 
-class SessionsClient(BaseClient):
-    def __init__(self, agent, baseUrl):
-        super(SessionsClient, self).__init__(agent, baseUrl)
-        self.agent = agent
-        self.baseUrl = baseUrl
-        self.sessionsPath = '/sessions'
-
-    def list(self, marker=None, limit=None):
-        path = self.sessionsPath
-        options = self._get_options_object(marker, limit)
-
-        return self.request('GET', path, options=options)
-
-    def get(self, sessionId):
-        path = '%s/%s' % (self.sessionsPath, sessionId)
-
-        return self.request('GET', path)
-
-    def create(self, heartbeatTimeout, payload=None):
-        path = self.sessionsPath
-        payload = deepcopy(payload) if payload else {}
-        payload['heartbeat_timeout'] = heartbeatTimeout
-        heartbeater = HeartBeater(self.agent,
-                                  self.baseUrl,
-                                  None,
-                                  heartbeatTimeout)
-
-        return self.request('POST',
-                            path,
-                            payload=payload,
-                            heartbeater=heartbeater)
-
-    def heartbeat(self, sessionId, token):
-        path = '%s/%s/heartbeat' % (self.sessionsPath, sessionId)
-        payload = {'token': token}
-
-        return self.request('POST', path, payload=payload)
-
-    def update(self, sessionId, payload):
-        path = '%s/%s' % (self.sessionsPath, sessionId)
-
-        return self.request('PUT', path, payload=payload)
-
-
 class EventsClient(BaseClient):
     def __init__(self, agent, baseUrl):
         super(EventsClient, self).__init__(agent, baseUrl)
@@ -294,12 +250,18 @@ class ServicesClient(BaseClient):
 
         return self.request('GET', path)
 
-    def create(self, sessionId, serviceId, payload=None):
+    def create(self, serviceId, heartbeatTimeout, payload=None):
         payload = deepcopy(payload) if payload else {}
-        payload['session_id'] = sessionId
         payload['id'] = serviceId
+        payload['heartbeat_timeout'] = heartbeatTimeout
 
         return self.request('POST', self.servicesPath, payload=payload)
+
+    def heartbeat(self, serviceId, token):
+        path = '%s/%s/heartbeat' % (self.servicesPath, serviceId)
+        payload = {'token': token}
+
+        return self.request('POST', path, payload=payload)
 
     def update(self, serviceId, payload):
         path = '%s/%s' % (self.servicesPath, serviceId)
@@ -488,7 +450,6 @@ class Client(object):
 
         self.agent = KeystoneAgent(agent, authUrl, (username, apiKey))
         self.baseUrl = baseUrl
-        self.sessions = SessionsClient(self.agent, self.baseUrl)
         self.events = EventsClient(self.agent, self.baseUrl)
         self.services = ServicesClient(self.agent, self.baseUrl)
         self.configuration = ConfigurationClient(self.agent, self.baseUrl)
