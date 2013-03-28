@@ -262,7 +262,7 @@ class ServicesClient(BaseClient):
         registerResult = Deferred()
         lastErr = None
 
-        def doRegister(serviceId, heartbeatTimeout,retryCounter, 
+        def doRegister(serviceId, heartbeatTimeout, retryCounter,
                        success, lastErr, result=None):
             if success and (retryCounter < retryCount):
                 registerResult.callback(result)

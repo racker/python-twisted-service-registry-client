@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# Taken from
+# https://github.com/Kami/python-yubico-client/blob/master/tests/utils.py
 
 from __future__ import with_statement
 
@@ -25,7 +28,7 @@ import atexit
 
 from os.path import join as pjoin
 
-# Taken from https://github.com/Kami/python-yubico-client/blob/master/tests/utils.py
+
 def waitForStartUp(process, address, timeout=10):
     # connect to it, with a timeout in case something went wrong
     start = time.time()
