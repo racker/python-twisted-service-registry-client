@@ -1,4 +1,4 @@
-{
+
     "values": [
         {
             "id": "6bc8d050-f86a-11e1-a89e-ca2ffe480b20",
@@ -6,7 +6,6 @@
             "type": "service.join",
             "payload": {
                 "id": "dfw1-api",
-                "session_id": "sessionId",
                 "tags": [],
                 "metadata": {}
             }
@@ -15,7 +14,6 @@
             "type": "service.join",
             "payload": {
                 "id": "dfw1-db1",
-                "session_id": "sessionId",
                 "tags": [
                     "db",
                     "mysql"

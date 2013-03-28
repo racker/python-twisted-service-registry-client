@@ -55,54 +55,49 @@ class ServiceRegistryClientTests(TestCase):
 
         return d
 
-    def test_create_session(self):
-        def session_assert(result):
-            response_body = {'token': TOKENS[0]}
-            self.assertEqual(result[0], response_body)
-            self.assertEqual(result[1], 'sessionId')
-            self.assertTrue(isinstance(result[2], HeartBeater))
-            self.assertEqual(result[2].heartbeatInterval, 12.0)
-            self.assertEqual(result[2].nextToken, TOKENS[0])
-
-        d = self.client.sessions.create(15)
-        d.addCallback(session_assert)
-
-        return d
-
-    def test_heartbeat_session(self):
-        def heartbeat_assert(result):
-            heartbeat_response = {'token': TOKENS[0]}
-            self.assertEqual(result, heartbeat_response)
-
-        d = self.client.sessions.heartbeat('sessionId', 'someToken')
-        d.addCallback(heartbeat_assert)
-
-        return d
-
     def test_create_service(self):
         def service_assert(result):
-            self.assertEqual(result, 'dfw1-db1')
+            response_body = {'token': TOKENS[0]}
+            self.assertEqual(result[0], response_body)
+            self.assertTrue(isinstance(result[1], HeartBeater))
+            self.assertEqual(result[1].heartbeatInterval, 12.0)
+            self.assertEqual(result[1].nextToken, TOKENS[0])
 
-        d = self.client.services.create('sessionId', 'dfw1-db1')
+        d = self.client.services.create('dfw1-db1', 15)
         d.addCallback(service_assert)
 
         return d
 
     def test_register_service(self):
         def service_assert(result):
-            self.assertEqual(result, 'dfw1-db1')
+            response_body = {'token': TOKENS[0]}
+            self.assertEqual(result[0], response_body)
+            self.assertTrue(isinstance(result[1], HeartBeater))
+            self.assertEqual(result[1].heartbeatInterval, 12.0)
+            self.assertEqual(result[1].nextToken, TOKENS[0])
 
-        d = self.client.services.register('sessionId', 'dfw1-db1')
+        d = self.client.services.register('dfw1-db1', 15)
         d.addCallback(service_assert)
+
+        return d
+
+    def test_heartbeat_service(self):
+        def heartbeat_assert(result):
+            heartbeat_response = {'token': TOKENS[0]}
+            self.assertEqual(result, heartbeat_response)
+
+        d = self.client.services.heartbeat('dfw1-db1', 'someToken')
+        d.addCallback(heartbeat_assert)
 
         return d
 
     def test_get_service(self):
         def service_assert(result):
             self.assertEqual(result['id'], 'dfw1-db1')
-            self.assertEqual(result['session_id'], 'sessionId')
             self.assertEqual(result['tags'], ['db', 'mysql'])
             self.assertEqual(result['metadata'], EXPECTED_METADATA)
+            self.assertEqual(result['heartbeat_timeout'], 30)
+            self.assertTrue('last_seen' in result)
 
         d = self.client.services.get('dfw1-db1')
         d.addCallback(service_assert)
@@ -112,11 +107,9 @@ class ServiceRegistryClientTests(TestCase):
     def test_list_services(self):
         def services_assert(result):
             self.assertEqual(result['values'][0]['id'], 'dfw1-api')
-            self.assertEqual(result['values'][0]['session_id'], 'sessionId')
             self.assertTrue('tags' in result['values'][0])
             self.assertTrue('metadata' in result['values'][0])
             self.assertEqual(result['values'][1]['id'], 'dfw1-db1')
-            self.assertEqual(result['values'][1]['session_id'], 'sessionId')
             self.assertEqual(result['values'][1]['tags'],
                              ['db', 'mysql'])
             self.assertEqual(result['values'][1]['metadata'],
@@ -131,7 +124,6 @@ class ServiceRegistryClientTests(TestCase):
     def test_listForTag(self):
         def services_for_tag_assert(result):
             self.assertEqual(result['values'][0]['id'], 'dfw1-db1')
-            self.assertEqual(result['values'][0]['session_id'], 'sessionId')
             self.assertEqual(result['values'][0]['tags'],
                              ['db', 'mysql'])
             self.assertEqual(result['values'][0]['metadata'],
@@ -140,31 +132,6 @@ class ServiceRegistryClientTests(TestCase):
 
         d = self.client.services.listForTag('db')
         d.addCallback(services_for_tag_assert)
-
-        return d
-
-    def test_get_sessions(self):
-        def sessions_assert(result):
-            self.assertEqual(result['values'][0]['id'], 'sessionId')
-            self.assertEqual(result['values'][0]['heartbeat_timeout'], 30)
-            self.assertTrue('metadata' in result['values'][0])
-            self.assertTrue('last_seen' in result['values'][0])
-            self.assertTrue('metadata' in result)
-
-        d = self.client.sessions.list()
-        d.addCallback(sessions_assert)
-
-        return d
-
-    def test_get_session(self):
-        def session_assert(result):
-            self.assertEqual(result['id'], 'sessionId')
-            self.assertEqual(result['heartbeat_timeout'], 30)
-            self.assertTrue('metadata' in result)
-            self.assertTrue('last_seen' in result)
-
-        d = self.client.sessions.get('sessionId')
-        d.addCallback(session_assert)
 
         return d
 
@@ -189,20 +156,20 @@ class ServiceRegistryClientTests(TestCase):
 
         return d
 
-    @mock.patch("txServiceRegistry.client.BaseClient.request")
+    @mock.patch('txServiceRegistry.client.BaseClient.request')
     def _marker_assertion(self, path, request):
         client = getattr(self.client, path.strip('/'))
         client.list(marker='someMarker')
         request.assert_called_with('GET', path,
                                    options={'marker': 'someMarker'})
 
-    @mock.patch("txServiceRegistry.client.BaseClient.request")
+    @mock.patch('txServiceRegistry.client.BaseClient.request')
     def _limit_assertion(self, path, request):
         client = getattr(self.client, path.strip('/'))
         client.list(limit=3)
         request.assert_called_with('GET', path, options={'limit': 3})
 
-    @mock.patch("txServiceRegistry.client.BaseClient.request")
+    @mock.patch('txServiceRegistry.client.BaseClient.request')
     def _marker_and_limit_assertion(self, path, request):
         client = getattr(self.client, path.strip('/'))
         client.list(marker='someMarker', limit=3)
@@ -213,9 +180,6 @@ class ServiceRegistryClientTests(TestCase):
     def test_list_services_with_marker_calls_request_with_marker(self):
         return self._marker_assertion('/services')
 
-    def test_list_sessions_with_marker_calls_request_with_marker(self):
-        return self._marker_assertion('/sessions')
-
     def test_list_events_with_marker_calls_request_with_marker(self):
         return self._marker_assertion('/events')
 
@@ -225,9 +189,6 @@ class ServiceRegistryClientTests(TestCase):
     def test_list_services_with_limit_calls_request_with_limit(self):
         return self._limit_assertion('/services')
 
-    def test_list_sessions_with_limit_calls_request_with_limit(self):
-        return self._limit_assertion('/sessions')
-
     def test_list_events_with_limit_calls_request_with_limit(self):
         return self._limit_assertion('/events')
 
@@ -236,9 +197,6 @@ class ServiceRegistryClientTests(TestCase):
 
     def test_list_services_with_marker_and_limit(self):
         return self._marker_and_limit_assertion('/services')
-
-    def test_list_sessions_request_with_marker_and_limit(self):
-        return self._marker_and_limit_assertion('/sessions')
 
     def test_list_events_with_mark_and_limit(self):
         return self._marker_and_limit_assertion('/events')

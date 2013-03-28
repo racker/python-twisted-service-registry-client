@@ -47,20 +47,16 @@ class ResponseReceiver(Protocol):
     as it arrives.
     When the body has been completely delivered, connectionLost is called.
     """
-    def __init__(self, finished, idFromUrl=None, heartbeater=None):
+    def __init__(self, finished, heartbeater=None):
         """
         @param finished: Deferred to callback with result in connectionLost
         @type finished: L{Deferred}
-        @param idFromUrl: Optional session or service ID that was parsed out
-        of the location header.
-        @type idFromUrl: C{str}
         @param heartbeater: Optional HeartBeater object created when a
         session is created.
         @type heartbeater: L{HeartBeater}
         """
         self.finished = finished
         self.remaining = StringIO()
-        self.idFromUrl = idFromUrl
         self.heartbeater = heartbeater
 
     def dataReceived(self, receivedBytes):
@@ -79,29 +75,19 @@ class ResponseReceiver(Protocol):
         a twisted.web.http.PotentialDataLoss exception.
         """
         self.remaining.reset()
-        # When creating a session, the token is returned in the body, and the
-        # session ID is in the location header URL. When creating a service,
-        # the body is empty, and the service ID is in the location header URL.
-        if self.idFromUrl:
-            result = None
-            if self.remaining.getvalue():
-                result = json.load(self.remaining)
 
-            returnTuple = (result, self.idFromUrl)
-            if self.heartbeater:
-                self.heartbeater.nextToken = result['token']
-                returnTuple = returnTuple + (self.heartbeater,)
-
-            # Return just service ID if result is None
-            if result is None:
-                self.finished.callback(self.idFromUrl)
-            else:
-                self.finished.callback(returnTuple)
-
+        try:
+            result = json.load(self.remaining)
+        except Exception, e:
+            self.finished.errback(e)
             return
 
-        result = json.load(self.remaining)
-        self.finished.callback(result)
+        returnValue = result
+        if self.heartbeater:
+            self.heartbeater.nextToken = result['token']
+            returnValue = (result, self.heartbeater)
+
+        self.finished.callback(returnValue)
 
 
 class BaseClient(object):
@@ -147,23 +133,13 @@ class BaseClient(object):
                                     heartbeater,
                                     retry_count)
             finished = Deferred()
-            idFromUrl = None
             # If response has no body, callback with True
             if response.code == httplib.NO_CONTENT:
                 finished.callback(True)
 
                 return finished
 
-            # If response code is 201, extract service or session id
-            # from the location
-            if response.code == httplib.CREATED:
-                locationHeader = response.headers.getRawHeaders('location')[0]
-                idFromUrl = self.getIdFromUrl(locationHeader)
-                if 'sessions' in locationHeader:
-                    heartbeater.sessionId = idFromUrl
-
             response.deliverBody(ResponseReceiver(finished,
-                                                  idFromUrl,
                                                   heartbeater))
 
             return finished
@@ -218,50 +194,6 @@ class BaseClient(object):
         return d
 
 
-class SessionsClient(BaseClient):
-    def __init__(self, agent, baseUrl):
-        super(SessionsClient, self).__init__(agent, baseUrl)
-        self.agent = agent
-        self.baseUrl = baseUrl
-        self.sessionsPath = '/sessions'
-
-    def list(self, marker=None, limit=None):
-        path = self.sessionsPath
-        options = self._get_options_object(marker, limit)
-
-        return self.request('GET', path, options=options)
-
-    def get(self, sessionId):
-        path = '%s/%s' % (self.sessionsPath, sessionId)
-
-        return self.request('GET', path)
-
-    def create(self, heartbeatTimeout, payload=None):
-        path = self.sessionsPath
-        payload = deepcopy(payload) if payload else {}
-        payload['heartbeat_timeout'] = heartbeatTimeout
-        heartbeater = HeartBeater(self.agent,
-                                  self.baseUrl,
-                                  None,
-                                  heartbeatTimeout)
-
-        return self.request('POST',
-                            path,
-                            payload=payload,
-                            heartbeater=heartbeater)
-
-    def heartbeat(self, sessionId, token):
-        path = '%s/%s/heartbeat' % (self.sessionsPath, sessionId)
-        payload = {'token': token}
-
-        return self.request('POST', path, payload=payload)
-
-    def update(self, sessionId, payload):
-        path = '%s/%s' % (self.sessionsPath, sessionId)
-
-        return self.request('PUT', path, payload=payload)
-
-
 class EventsClient(BaseClient):
     def __init__(self, agent, baseUrl):
         super(EventsClient, self).__init__(agent, baseUrl)
@@ -294,12 +226,23 @@ class ServicesClient(BaseClient):
 
         return self.request('GET', path)
 
-    def create(self, sessionId, serviceId, payload=None):
+    def create(self, serviceId, heartbeatTimeout, payload=None):
         payload = deepcopy(payload) if payload else {}
-        payload['session_id'] = sessionId
         payload['id'] = serviceId
+        payload['heartbeat_timeout'] = heartbeatTimeout
+        heartbeater = HeartBeater(self.agent,
+                                  self.baseUrl,
+                                  None,
+                                  heartbeatTimeout)
 
-        return self.request('POST', self.servicesPath, payload=payload)
+        return self.request('POST', self.servicesPath, payload=payload,
+                            heartbeater=heartbeater)
+
+    def heartbeat(self, serviceId, token):
+        path = '%s/%s/heartbeat' % (self.servicesPath, serviceId)
+        payload = {'token': token}
+
+        return self.request('POST', path, payload=payload)
 
     def update(self, serviceId, payload):
         path = '%s/%s' % (self.servicesPath, serviceId)
@@ -311,19 +254,19 @@ class ServicesClient(BaseClient):
 
         return self.request('DELETE', path)
 
-    def register(self, sessionId, serviceId, payload=None, retryDelay=2):
+    def register(self, serviceId, heartbeatTimeout, payload=None,
+                 retryDelay=2):
         retryCount = MAX_HEARTBEAT_TIMEOUT / retryDelay
         success = False
         retryCounter = 0
         registerResult = Deferred()
         lastErr = None
 
-        def doRegister(sessionId, serviceId, retryCounter, success, lastErr):
+        def doRegister(serviceId, heartbeatTimeout, retryCounter,
+                       success, lastErr, result=None):
             if success and (retryCounter < retryCount):
-                registerResult.callback(serviceId)
-
+                registerResult.callback(result)
                 return registerResult
-
             elif (not success) and (retryCounter == retryCount):
                 registerResult.errback(lastErr)
 
@@ -337,8 +280,9 @@ class ServicesClient(BaseClient):
                     lastErr = result
                     if result['type'] == 'serviceWithThisIdExists':
                         retryCounter += 1
-                        reactor.callLater(retryDelay, doRegister, sessionId,
-                                          serviceId, retryCounter, success,
+                        reactor.callLater(retryDelay, doRegister,
+                                          serviceId, heartbeatTimeout,
+                                          retryCounter, success,
                                           lastErr)
 
                         return registerResult
@@ -347,15 +291,16 @@ class ServicesClient(BaseClient):
 
                         return registerResult
                 else:
-                    return doRegister(sessionId, serviceId, retryCounter,
-                                      True, None)
+                    return doRegister(serviceId, heartbeatTimeout,
+                                      retryCounter, True, None, result)
 
-            d = self.create(sessionId, serviceId, payload)
+            d = self.create(serviceId, heartbeatTimeout, payload)
             d.addCallback(cbCreate, retryCounter, success)
 
             return d
 
-        return doRegister(sessionId, serviceId, retryCounter, success, lastErr)
+        return doRegister(serviceId, heartbeatTimeout, retryCounter, success,
+                          lastErr)
 
 
 class ConfigurationClient(BaseClient):
@@ -488,7 +433,6 @@ class Client(object):
 
         self.agent = KeystoneAgent(agent, authUrl, (username, apiKey))
         self.baseUrl = baseUrl
-        self.sessions = SessionsClient(self.agent, self.baseUrl)
         self.events = EventsClient(self.agent, self.baseUrl)
         self.services = ServicesClient(self.agent, self.baseUrl)
         self.configuration = ConfigurationClient(self.agent, self.baseUrl)

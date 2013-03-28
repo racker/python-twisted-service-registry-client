@@ -10,5 +10,5 @@
         "version": "5.5.24-0ubuntu0.12.04.1 (Ubuntu)"
     },
     "id": "dfw1-db1",
-    "session_id": "sessionId"
+    "heartbeat_timeout": 30
 }
