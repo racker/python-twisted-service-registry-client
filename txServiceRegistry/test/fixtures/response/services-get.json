@@ -2,13 +2,15 @@
     "values": [
         {
             "id": "dfw1-api",
-            "session_id": "sessionId",
+            "heartbeat_timeout": 30,
+            "last_seen": 1362900438,
             "tags": [],
             "metadata": {}
         },
         {
             "id": "dfw1-db1",
-            "session_id": "sessionId",
+            "heartbeat_timeout": 30,
+            "last_seen": 1362900438,
             "tags": [
                 "db",
                 "mysql"

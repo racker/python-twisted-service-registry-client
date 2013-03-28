@@ -2,7 +2,8 @@
     "values": [
         {
             "id": "dfw1-api",
-            "session_id": "seOne",
+            "heartbeat_timeout": 30,
+            "last_seen": 1362900438,
             "tags": [],
             "metadata": {}
         }
