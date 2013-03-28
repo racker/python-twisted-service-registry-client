@@ -273,19 +273,19 @@ class ServicesClient(BaseClient):
 
         return self.request('DELETE', path)
 
-    def register(self, sessionId, serviceId, payload=None, retryDelay=2):
+    def register(self, serviceId, heartbeatTimeout, payload=None,
+                 retryDelay=2):
         retryCount = MAX_HEARTBEAT_TIMEOUT / retryDelay
         success = False
         retryCounter = 0
         registerResult = Deferred()
         lastErr = None
 
-        def doRegister(sessionId, serviceId, retryCounter, success, lastErr):
+        def doRegister(serviceId, heartbeatTimeout,retryCounter, success, lastErr):
             if success and (retryCounter < retryCount):
                 registerResult.callback(serviceId)
 
                 return registerResult
-
             elif (not success) and (retryCounter == retryCount):
                 registerResult.errback(lastErr)
 
@@ -299,8 +299,9 @@ class ServicesClient(BaseClient):
                     lastErr = result
                     if result['type'] == 'serviceWithThisIdExists':
                         retryCounter += 1
-                        reactor.callLater(retryDelay, doRegister, sessionId,
-                                          serviceId, retryCounter, success,
+                        reactor.callLater(retryDelay, doRegister,
+                                          serviceId, heartbeatTimeout,
+                                          retryCounter, success,
                                           lastErr)
 
                         return registerResult
@@ -309,15 +310,16 @@ class ServicesClient(BaseClient):
 
                         return registerResult
                 else:
-                    return doRegister(sessionId, serviceId, retryCounter,
-                                      True, None)
+                    return doRegister(serviceId, heartbeatTimeout,
+                                      retryCounter, True, None)
 
-            d = self.create(sessionId, serviceId, payload)
+            d = self.create(serviceId, heartbeatTimeout, payload)
             d.addCallback(cbCreate, retryCounter, success)
 
             return d
 
-        return doRegister(sessionId, serviceId, retryCounter, success, lastErr)
+        return doRegister(serviceId, heartbeatTimeout, retryCounter, success,
+                          lastErr)
 
 
 class ConfigurationClient(BaseClient):
