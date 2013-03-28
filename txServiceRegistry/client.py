@@ -154,14 +154,6 @@ class BaseClient(object):
 
                 return finished
 
-            # If response code is 201, extract service or session id
-            # from the location
-            if response.code == httplib.CREATED:
-                locationHeader = response.headers.getRawHeaders('location')[0]
-                idFromUrl = self.getIdFromUrl(locationHeader)
-                if 'sessions' in locationHeader:
-                    heartbeater.sessionId = idFromUrl
-
             response.deliverBody(ResponseReceiver(finished,
                                                   idFromUrl,
                                                   heartbeater))
@@ -254,8 +246,13 @@ class ServicesClient(BaseClient):
         payload = deepcopy(payload) if payload else {}
         payload['id'] = serviceId
         payload['heartbeat_timeout'] = heartbeatTimeout
+        heartbeater = HeartBeater(self.agent,
+                                  self.baseUrl,
+                                  None,
+                                  heartbeatTimeout)
 
-        return self.request('POST', self.servicesPath, payload=payload)
+        return self.request('POST', self.servicesPath, payload=payload,
+                            heartbeater=heartbeater)
 
     def heartbeat(self, serviceId, token):
         path = '%s/%s/heartbeat' % (self.servicesPath, serviceId)
@@ -281,10 +278,10 @@ class ServicesClient(BaseClient):
         registerResult = Deferred()
         lastErr = None
 
-        def doRegister(serviceId, heartbeatTimeout,retryCounter, success, lastErr):
+        def doRegister(serviceId, heartbeatTimeout,retryCounter, 
+                       success, lastErr, result=None):
             if success and (retryCounter < retryCount):
-                registerResult.callback(serviceId)
-
+                registerResult.callback(result)
                 return registerResult
             elif (not success) and (retryCounter == retryCount):
                 registerResult.errback(lastErr)
@@ -311,7 +308,7 @@ class ServicesClient(BaseClient):
                         return registerResult
                 else:
                     return doRegister(serviceId, heartbeatTimeout,
-                                      retryCounter, True, None)
+                                      retryCounter, True, None, result)
 
             d = self.create(serviceId, heartbeatTimeout, payload)
             d.addCallback(cbCreate, retryCounter, success)
