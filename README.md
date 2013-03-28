@@ -2,11 +2,19 @@
 
 A Twisted Python client for Rackspace Service Registry.
 
-# License
+## Installation
+
+`pip install --upgrade txServiceRegistry`
+
+Note: You need to install Python header files otherwise the installation will
+fail. On debian based distributions you can obtain them by installing
+`python-dev` package.
+
+## License
 
 This library is distributed under the [Apache license](http://www.apache.org/licenses/LICENSE-2.0.html).
 
-# Usage
+## Usage
 
 ```Python
 from txServiceRegistry import Client
