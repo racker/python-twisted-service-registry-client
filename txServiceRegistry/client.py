@@ -47,20 +47,16 @@ class ResponseReceiver(Protocol):
     as it arrives.
     When the body has been completely delivered, connectionLost is called.
     """
-    def __init__(self, finished, idFromUrl=None, heartbeater=None):
+    def __init__(self, finished, heartbeater=None):
         """
         @param finished: Deferred to callback with result in connectionLost
         @type finished: L{Deferred}
-        @param idFromUrl: Optional session or service ID that was parsed out
-        of the location header.
-        @type idFromUrl: C{str}
         @param heartbeater: Optional HeartBeater object created when a
         session is created.
         @type heartbeater: L{HeartBeater}
         """
         self.finished = finished
         self.remaining = StringIO()
-        self.idFromUrl = idFromUrl
         self.heartbeater = heartbeater
 
     def dataReceived(self, receivedBytes):
@@ -79,31 +75,6 @@ class ResponseReceiver(Protocol):
         a twisted.web.http.PotentialDataLoss exception.
         """
         self.remaining.reset()
-
-        # When creating a session, the token is returned in the body, and the
-        # session ID is in the location header URL. When creating a service,
-        # the body is empty, and the service ID is in the location header URL.
-        if self.idFromUrl:
-            result = None
-            if self.remaining.getvalue():
-                try:
-                    result = json.load(self.remaining)
-                except Exception, e:
-                    self.finished.errback(e)
-                    return
-
-            returnTuple = (result, self.idFromUrl)
-            if self.heartbeater:
-                self.heartbeater.nextToken = result['token']
-                returnTuple = returnTuple + (self.heartbeater,)
-
-            # Return just service ID if result is None
-            if result is None:
-                self.finished.callback(self.idFromUrl)
-            else:
-                self.finished.callback(returnTuple)
-
-            return
 
         try:
             result = json.load(self.remaining)
@@ -162,7 +133,6 @@ class BaseClient(object):
                                     heartbeater,
                                     retry_count)
             finished = Deferred()
-            idFromUrl = None
             # If response has no body, callback with True
             if response.code == httplib.NO_CONTENT:
                 finished.callback(True)
@@ -170,7 +140,6 @@ class BaseClient(object):
                 return finished
 
             response.deliverBody(ResponseReceiver(finished,
-                                                  idFromUrl,
                                                   heartbeater))
 
             return finished
