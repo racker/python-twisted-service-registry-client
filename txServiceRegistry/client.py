@@ -111,7 +111,12 @@ class ResponseReceiver(Protocol):
             self.finished.errback(e)
             return
 
-        self.finished.callback(result)
+        returnValue = result
+        if self.heartbeater:
+            self.heartbeater.nextToken = result['token']
+            returnValue = (result, self.heartbeater)
+
+        self.finished.callback(returnValue)
 
 
 class BaseClient(object):
