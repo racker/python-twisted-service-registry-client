@@ -79,13 +79,18 @@ class ResponseReceiver(Protocol):
         a twisted.web.http.PotentialDataLoss exception.
         """
         self.remaining.reset()
+
         # When creating a session, the token is returned in the body, and the
         # session ID is in the location header URL. When creating a service,
         # the body is empty, and the service ID is in the location header URL.
         if self.idFromUrl:
             result = None
             if self.remaining.getvalue():
-                result = json.load(self.remaining)
+                try:
+                    result = json.load(self.remaining)
+                except Exception, e:
+                    self.finished.errback(e)
+                    return
 
             returnTuple = (result, self.idFromUrl)
             if self.heartbeater:
@@ -100,7 +105,12 @@ class ResponseReceiver(Protocol):
 
             return
 
-        result = json.load(self.remaining)
+        try:
+            result = json.load(self.remaining)
+        except Exception, e:
+            self.finished.errback(e)
+            return
+
         self.finished.callback(result)
 
 
