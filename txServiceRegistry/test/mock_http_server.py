@@ -25,13 +25,13 @@ mock_action = None
 signature = None
 
 HTTP_GET_PATHS = {
-    '/sessions': {'fixture_path': 'sessions-get.json'},
-    '/sessions/sessionId': {'fixture_path': 'sessions-sessionId-get.json'},
     '/limits': {'fixture_path': 'limits-get.json'},
     '/events': {'fixture_path': 'events-get.json'},
     '/configuration': {'fixture_path': 'configuration-get.json'},
     '/configuration/configId':
     {'fixture_path': 'configuration-configId-get.json'},
+    '/configuration/api/':
+    {'fixture_path': 'configuration-api-get.json'},
     '/services': {'fixture_path': 'services-get.json'},
     '/services/dfw1-db1':
     {'fixture_path': 'services-dfw1-db1-get.json'},
@@ -39,14 +39,12 @@ HTTP_GET_PATHS = {
 }
 
 HTTP_POST_PATHS = {
-    '/sessions':
-    {'fixture_path': 'sessions-post.json',
-     'headers': {'Location': '127.0.0.1/v1.0/7777/sessions/sessionId'}},
-    '/sessions/sessionId/heartbeat':
-    {'fixture_path': 'sessions-sessionId-heartbeat-post.json',
-     'status_code': 200},
     '/services':
-    {'headers': {'Location': '127.0.0.1/v1.0/7777/services/dfw1-db1'}}
+    {'fixture_path': 'services-post.json',
+     'headers': {'Location': '127.0.0.1/v1.0/7777/services/dfw1-db1'}},
+    '/services/dfw1-db1/heartbeat':
+    {'fixture_path': 'services-dfw1-db1-heartbeat-post.json',
+     'status_code': 200}
 }
 
 usage = 'usage: %prog --port=<port> --fixtures-dir=<fixtures directory>'
@@ -55,8 +53,7 @@ parser.add_option("--port", dest='port', default=8881,
                   help='Port to listen on', metavar='PORT')
 parser.add_option("--fixtures-dir", dest='fixtures_dir',
                   default='fixtures/response/',
-                  help='The folder in which JSON response fixtures'
-                       ' for the tests live')
+                  help='The folder in which JSON fixtures for the tests live')
 
 (options, args) = parser.parse_args()
 
@@ -90,11 +87,7 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
         return self._setup_response(HTTP_POST_PATHS, 201)
 
     def do_PUT(self):
-        if 'sessions' in self.path:
-            headers = \
-                {'Location': '127.0.0.1/v1.0/7777/sessions/sessionId'}
-            return self._end(status_code=204, headers=headers)
-        elif 'services' in self.path:
+        if 'services' in self.path:
             headers = \
                 {'Location': '127.0.0.1/v1.0/7777/services/dfw1-db1'}
             return self._end(status_code=204, headers=headers)
@@ -104,12 +97,15 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     def _end(self, status_code=200, headers=None, body=''):
         print 'Sending response: status_code=%s, body=%s' % (status_code, body)
+
         self.send_response(status_code)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Content-Length', str(len(body)))
+
         if headers:
             for key, value in headers.iteritems():
                 self.send_header(key, value)
+
         self.end_headers()
         self.wfile.write(body)
 
