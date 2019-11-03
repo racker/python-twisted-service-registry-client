@@ -1,4 +1,4 @@
-Twisted==12.1.0
+Twisted==19.7.0
 pep8
 txKeystone
 mock
